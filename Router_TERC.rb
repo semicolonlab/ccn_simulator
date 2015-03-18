@@ -1,3 +1,4 @@
+# coding: utf-8
 module Router_TERC
   def Router_TERC_Init
   
@@ -59,15 +60,13 @@ module Router_TERC
       cacheAry.push( cache )
     }
     cDeleteCacheQ = lambda{
-      if cacheAry.length <= $gSettingAry[ :routerCacheSize ]
-        return false
-      end
+      cacheAry.length >= $gSettingAry[ :routerCacheSize ]
     }
     cDeleteCache = lambda{
       deleteCache = cacheAry[ 0 ]
       deleteCache[ :time ] = inEvent[ :time ]
       deleteCache[ :message ] = :routerDeleteCache
-      EVENT.Run( cache )
+      EVENT.Run( deleteCache ) # 即実行
     }
     cCacheNumCheck = lambda{
       Error("cacheSize", __LINE__) if cacheAry.length > $gSettingAry[:routerCacheSize]
@@ -83,7 +82,8 @@ module Router_TERC
   end
 
   def Router_TERC_DeleteCache( inEvent )
-    
+    cacheAry = ROUTER.GetRouterAry[ inEvent[ :nodeId ] ][ :cacheAry ]    
+    cacheAry.delete( inEvent )
   end
   
   def Router_TERC_CacheHit( inEvent )

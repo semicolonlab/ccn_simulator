@@ -12,7 +12,7 @@ $gSettingAry={ # コマンドライン引数なしのとき使用するパラメ
   linkNum:            nil,                   # 設定ファイルから自動設定
   userNum:            1,                     # ルータに接続するユーザ数
   serverNum:          500,                   # ルータに接続するサーバ数
-  contentNum:         10,                    # コンテンツ数 
+  contentNum:         1000,                    # コンテンツ数 
   routerCacheSize:    2,                     # ルータキャッシュサイズ
   zipf:               0.7,                   # zipf係数
   linkWidth:          1.0,                   # 帯域幅 1Gbps = 125 kBps
