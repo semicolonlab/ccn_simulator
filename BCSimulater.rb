@@ -1,8 +1,9 @@
+# coding: utf-8
 $gSettingAry={ # コマンドライン引数なしのとき使用するパラメータ
   time:               0,                     # 変更不可
   message:            :setting,              # 変更不可
   briteFile:          "N500L2000WAX1.brite", # BRITEファイルを指定
-  routerType:         :PROBTERC,                   # BC,TERC,POP,BCPOP
+  routerType:         :IP,                   # BC,TERC,POP,BCPOP
   simulationTime:     1000,                  # クエリ生成時間
   simulationStopTime: 110000,                # シミュレーション強制終了時間
   queryGenerateTime:  1.0,                   # 平均クエリ生成時間間隔
@@ -692,8 +693,6 @@ class Start
       inFilePath = "#{$gSettingAry[:briteFile]}"
       if inFilePath.index( ".brite" ) != nil
         return ReadBriteFile( inFilePath ) 
-      elsif inFilePath.index( ".topology" ) != nil
-        return ReadTopologyFile( inFilePath )
       else
         Error( "input file error", __LINE__)
       end
@@ -768,28 +767,10 @@ class Start
       :queryAry      => [], # コンテンツID, クエリリクエスト数
       :routerType    => nil,
       };x}
-    open(inFilePass).read.split("\n").drop(4).drop_while{|i|i!=""}.drop(3).map{|i|[ ("R"+i.split[1]).to_sym,("R"+i.split[2]).to_sym]}.each{|x|2.times{|i|@@mRouterAry[x[i]][:edgeAry].push(x[1-i])}}
-  end
-
-  def self.ReadTopologyFile( inFilePath ) # トポロジファイルを読み込んで@@mRouterAryに設定
-    puts "Start ReadTopologyFile"
-    open( inFilePath ){|f|f.each{ |line|
-      fromNodeId = line.split("=>")[ 0 ]
-      edgeAry = eval( line.split("=>")[ 1 ] )
-      routerAry[ fromNodeId ]={
-        :id            => fromNodeId,
-        :routingTblAry => {}, # key 到着ノードID, value 次ノードID
-        :bcAry         => {}, # key 
-        :hopCountAry   => {}, # key 到着ノードID, value ホップ数
-        :cacheAry      => [], # キャッシュ済コンテンツ番号配列
-        :edgeAry       => edgeAry,
-        :queryAry      => [], # コンテンツID, クエリリクエスト数
-        :routerType    => nil,
-      }
-    }}
+    open(inFilePass).read.split("\n").drop(4).drop_while{|i|i!=""}.drop(3).map{|i|[ ("R"+i.split[1]).to_sym,("R"+i.split[2]).to_sym]}.each{|x|2.times{|i|routerAry[x[i]][:edgeAry].push(x[1-i])}}
     routerAry
   end
-  
+
   def self.Dijkstra( inRouterAry )
     puts "Start Dijkstra " + $gSettingAry[ :routerNum ].to_s
     inRouterAry.each{|id,router| # すべてのルータからルータへの最短経路を登録
