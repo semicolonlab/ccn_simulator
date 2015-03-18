@@ -76,8 +76,10 @@ module Router_TERC
       cRefreshCache.call
     elsif cDeleteCacheQ.call
       cDeleteCache.call
-    elsif cAddCacheQ.call
+      cAddCache.call      
+    else
       cAddCache.call
+    end
   end
 
   def Router_TERC_DeleteCache( inEvent )

@@ -3,7 +3,7 @@ $gSettingAry={ # コマンドライン引数なしのとき使用するパラメ
   time:               0,                     # 変更不可
   message:            :setting,              # 変更不可
   briteFile:          "N500L2000WAX1.brite", # BRITEファイルを指定
-  routerType:         :IP,                   # BC,TERC,POP,BCPOP
+  routerType:         :TERC,                   # BC,TERC,POP,BCPOP
   simulationTime:     1000,                  # クエリ生成時間
   simulationStopTime: 110000,                # シミュレーション強制終了時間
   queryGenerateTime:  1.0,                   # 平均クエリ生成時間間隔
