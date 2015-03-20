@@ -144,10 +144,6 @@ class USER
     Error( "#{__FILE__} #{__LINE__} viaNodeIdAry" ) if inEvent[:viaNodeIdAry].length > 0
   end
 
-  def self.ReceiveQuery( inEvent )
-    Error( "#{__FILE__} #{__LINE__} UserReceiveQuery" )
-  end
-
 end
 
 class SERVER
