@@ -24,13 +24,12 @@ $gSettingAry={ # コマンドライン引数なしのとき使用するパラメ
   bcViewerLog:        0,                     # BCViewer用ログ出力フラグ
   bandWidth:          false,                # 帯域再現有無フラグ
 }
+require "./Statics.rb"
 
 class ROUTER
-  Dir::entries("./").each{|f| 
-    if f.index("Router_") && f.index(".rb") # Router_[^.]+.rb
-      require "./#{f.gsub(".rb","")}"       # モジュールを読み込む
-      eval "extend #{f.gsub(".rb","")}"     # クラスメソッドとして定義
-    end
+  Dir::glob("./Router_*.rb").each{| f | 
+    require "./#{f.gsub(".rb","").gsub("./","")}"  # モジュールを読み込む
+    eval "extend #{f.gsub(".rb","").gsub("./","")}"# クラスメソッドとして定義
   }
   
   @@mRouterAry = {} # Router情報を記憶する配列 Mainクラス内で設定
@@ -96,7 +95,9 @@ class USER
   def self.Init()
     ROUTER.GetRouterAry.keys.each{|i| 
       $gSettingAry[:userNum].times{|j|
-        @@mUserAry[ "#{i}.U#{j}".to_sym]={} 
+        @@mUserAry[ "#{i}.U#{j}".to_sym]={
+          # Nothing
+        }
       } 
     }
   end
@@ -140,12 +141,12 @@ class USER
   end
 
   def self.ReceiveContent( inEvent )
-    Error( "viaNodeIdAry", __LINE__ )if inEvent[:viaNodeIdAry].length > 0
-    Error( "UserReceiveContent Node Id", __LINE__ )if inEvent[:nodeId] == nil    
+    Error( "#{__FILE__} #{__LINE__} viaNodeIdAry" ) if inEvent[:viaNodeIdAry].length > 0
+    Error( "#{__FILE__} #{__LINE__} UserReceiveContent Node Id" ) if inEvent[:nodeId] == nil    
   end
 
   def self.ReceiveQuery( inEvent )
-    Error("USERReceiveQuery", __LINE__)
+    Error( "#{__FILE__} #{__LINE__} USERReceiveQuery" )
   end
 
 end
@@ -274,7 +275,7 @@ class LINK
     inEvent[:message] = :linkSendQuery
     return if cOverQueryLimit.call
     puts inEvent if inEvent[ :nextNodeId ] == nil
-    Error( "nextNodeId Error" , __LINE__ ) if inEvent[ :nextNodeId ] == nil
+    Error( "#{__FILE__} #{__LINE__} nextNodeId Error" ) if inEvent[ :nextNodeId ] == nil
 
     return EVENT.Register( inEvent ) if inEvent[ :nodeId ] == inEvent[ :nextNodeId ]
     inEvent[:time] = cCalcSendTime.call
@@ -297,7 +298,7 @@ class LINK
 
     inEvent[:message] = :linkSendContent
     return EVENT.Register( inEvent ) if inEvent[:nodeId] == inEvent[:nextNodeId]
-    Error( "nextNodeId Error" , __LINE__ ) if inEvent[ :nextNodeId] == nil
+    Error( "#{__FILE__} #{__LINE__} nextNodeId Error") if inEvent[ :nextNodeId] == nil
     inEvent[:time] = cCalcSendTime.call
     EVENT.Register( inEvent )
   end
@@ -308,33 +309,30 @@ class LINK
     inEvent[:nodeId] = inEvent[ :nextNodeId ]
     inEvent[:nextNodeId] = nil
     inEvent[:queryHopCount] += 1
-    if inEvent[ :nodeId ].to_s.index( "S" ) != nil # 【サーバ】へ転送か？
+    if inEvent[ :nodeId ].to_s.index( "S" ) != nil
       inEvent[:message] = :serverReceiveQuery
-      EVENT.Register( inEvent ) # 【サーバ】へ転送
-    else # 【ルータ】へ転送か？
+      EVENT.Register( inEvent )
+    else
       inEvent[:message] = :routerReceiveQuery
-      EVENT.Register( inEvent ) # 【ルータ】へ転送
+      EVENT.Register( inEvent )
     end
   end
   def self.SendContent( inEvent ) # Link.SendContent()
-      inEvent[:time] += $gSettingAry[ :contentPacket ]/ $gSettingAry[ :contentPacket ] / $gSettingAry[ :linkWidth ] # 次リンクまでの転送時間を加算
+      inEvent[:time] += $gSettingAry[ :contentPacket ]/ $gSettingAry[ :contentPacket ] / $gSettingAry[ :linkWidth ]
       inEvent[:pastNodeId] = inEvent[:nodeId] # 過去のノードを設定
       inEvent[:nodeId] = inEvent[:nextNodeId] # 【ノードID】に次ノードのIDを設定
       inEvent[:nextNodeId] = nil # 【転送先ノード】をリセット
       inEvent[:contentHopCount] += 1 # 【コンテンツホップ数】を増やす
+
       if inEvent[ :nodeId ].to_s.index( "U" ) != nil # 【ユーザ】へ転送か？
         inEvent[:message] = :userReceiveContent
         inEvent[:contentReceiveTime] = inEvent[ :time ] + ( inEvent[:contentPacketSize] ) / $gSettingAry[ :linkWidth ]
         EVENT.Register( inEvent ) # 【ユーザ】へ転送
         return 
-        #EVENT.Log( inEvent )
-        #USER.ReceiveContent( inEvent ) # 【ユーザ】へ転送
       else # 【ルータ】転送
         inEvent[:message] = :routerReceiveContent # 次イベントを【ルータコンテンツ受信処理】に設定
         EVENT.Register( inEvent ) # 【ルータ】へ転送
         return 
-        # EVENT.Log( inEvent )
-        # ROUTER.ReceiveContent( inEvent )
       end
   end
 end
@@ -364,14 +362,14 @@ class EVENT # 全てのイベント管理するクラス
     @@mEventAry[ pos, 0 ] = inEvent
   end
 
-  def self.SaveLog() # EVENT.SaveLog()
+  def self.SaveLog()
     open( $gSettingAry[:logFile], "w" ){|f| f.write( $gSettingAry.inspect + ",\n" +@@mLogStr ) }
   end  
 
   def self.Run( event )
       @@mEventCount += 1
       STATICS.ReadLogAry( event )
-      Error("EventTime #{event}",__LINE__) if @@mLastEventTime > event[ :time ]
+      Error("#{__FILE__}#{__LINE__} EventTime #{event}") if @@mLastEventTime > event[ :time ]
 
       case event[:message]
         when :routerReceiveQuery         then ROUTER.ReceiveQuery( event )
@@ -392,7 +390,7 @@ class EVENT # 全てのイベント管理するクラス
         when :staticsInit                then STATICS.init()
         when :staticsSave                then STATICS.Save()
       else
-        Error( "unknow event #event[:message]" , __LINE__ )
+        Error( "#{__FILE__} #{__LINE__} unknow event #event[:message]")
       end
   end  
 
@@ -415,8 +413,8 @@ class EVENT # 全てのイベント管理するクラス
   end
 end
 
-def Error( inErrorName, inLine ) # Error
-  puts "ERROR Line " + inLine.to_s + " " + inErrorName
+def Error( inErrorStr )
+  puts inErrorStr
   exit
 end
 
@@ -438,7 +436,7 @@ class Start
       if inFilePath.index( ".brite" ) != nil
         return ReadBriteFile( inFilePath ) 
       else
-        Error( "input file error", __LINE__)
+        Error( "#{__FILE__} #{__LINE__} input file error")
       end
     }
     cWriteLogFile = lambda{| inFilePath, inRouterAry | # 配列ファイル書き込み
