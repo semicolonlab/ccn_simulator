@@ -142,11 +142,10 @@ class USER
 
   def self.ReceiveContent( inEvent )
     Error( "#{__FILE__} #{__LINE__} viaNodeIdAry" ) if inEvent[:viaNodeIdAry].length > 0
-    Error( "#{__FILE__} #{__LINE__} UserReceiveContent Node Id" ) if inEvent[:nodeId] == nil    
   end
 
   def self.ReceiveQuery( inEvent )
-    Error( "#{__FILE__} #{__LINE__} USERReceiveQuery" )
+    Error( "#{__FILE__} #{__LINE__} UserReceiveQuery" )
   end
 
 end
@@ -427,22 +426,8 @@ class Start
       open( inFilePath, "r" ){| f | $gSettingAry = eval( f.read ) }
       puts $gSettingAry
     }
-    cSetSeed = lambda{| inSeed | # 乱数設定
-      $gRandom = Random.new( inSeed )  
-    }
-    cReadTopologyFile = lambda{ # トポロジファイル読み込み
-      return nil if File.exist?( "#{$gSettingAry[:briteFile]}.log" )
-      inFilePath = "#{$gSettingAry[:briteFile]}"
-      if inFilePath.index( ".brite" ) != nil
-        return ReadBriteFile( inFilePath ) 
-      else
-        Error( "#{__FILE__} #{__LINE__} input file error")
-      end
-    }
-    cWriteLogFile = lambda{| inFilePath, inRouterAry | # 配列ファイル書き込み
-      return if File.exist?( inFilePath )
-      writeRouterAry = Dijkstra( inRouterAry )
-      open( inFilePath, "w" ){| f | f.write( writeRouterAry.inspect )}
+    cReadBriteFileQ = lambda{
+      !File.exist?( "#{$gSettingAry[:briteFile]}.log" ) && File.exist?( "#{$gSettingAry[:briteFile]}" )
     }
     cSetRouterAryFromLogFile = lambda{ |inFilePath| # 配列ファイル読み込み
       open( inFilePath ,"r" ){| f | ROUTER.SetRouterAry( eval( f.read ) ) }
@@ -483,10 +468,10 @@ class Start
       STATICS.SaveLog
     }
     startTime = Time.now
-    cReadSettingFile.call( ARGV[ 0 ] )
-    cSetSeed.call( $gSettingAry[ :seed ] )
-    routerAry = cReadTopologyFile.call
-    cWriteLogFile.call( "#{$gSettingAry[ :briteFile ]}.log", routerAry ) if routerAry != nil
+    $gRandom = Random.new( $gSettingAry[ :seed ] )  
+
+    cReadSettingFile.call( ARGV[ 0 ] )        if ARGV[ 0 ] != nil
+    ReadBriteFile( $gSettingAry[:briteFile].to_s ) if cReadBriteFileQ.call
     cSetRouterAryFromLogFile.call( "#{$gSettingAry[ :briteFile ]}.log" )    
     cSetRouterType.call
     cSetSimulaterSetting.call  
@@ -497,9 +482,9 @@ class Start
     puts "Time : " + ( Time.now - startTime ).to_s + " s"
   end
   
-  def self.ReadBriteFile(inFilePass)
-    puts "Start ReadBriteFile"
-    routerAry=open(inFilePass).read.split("\n").drop(4).take_while{|i|i!=""}.length.times.inject({}){|x,i|x["R#{i}".to_sym]={
+  def self.ReadBriteFile(inFilePath)
+    puts "Start ReadBriteFile #{inFilePath}"
+    routerAry=open(inFilePath).read.split("\n").drop(4).take_while{|i|i!=""}.length.times.inject({}){|x,i|x["R#{i}".to_sym]={
       :id            => "R#{i}".to_sym,
       :routingTblAry => {}, # key 到着ノードID, value 次ノードID
       :bcAry         => {}, # key 
@@ -509,12 +494,14 @@ class Start
       :queryAry      => [], # コンテンツID, クエリリクエスト数
       :routerType    => nil,
       };x}
-    open(inFilePass).read.split("\n").drop(4).drop_while{|i|i!=""}.drop(3).map{|i|[ ("R"+i.split[1]).to_sym,("R"+i.split[2]).to_sym]}.each{|x|2.times{|i|routerAry[x[i]][:edgeAry].push(x[1-i])}}
-    routerAry
+    open(inFilePath).read.split("\n").drop(4).drop_while{|i|i!=""}.drop(3).map{|i|
+      [ ("R"+i.split[1]).to_sym,("R"+i.split[2]).to_sym]
+    }.each{|x|2.times{|i|routerAry[x[i]][:edgeAry].push(x[1-i])}}
+    writeRouterAry = Dijkstra( routerAry )
+    open( "#{inFilePath}.log", "w" ){| f | f.write( writeRouterAry.inspect )}
   end
 
   def self.Dijkstra( inRouterAry )
-    puts "Start Dijkstra " + $gSettingAry[ :routerNum ].to_s
     inRouterAry.each{|id,router| # すべてのルータからルータへの最短経路を登録
       puts "Dijkstra #{id}" # 処理中のIDを表示
       temp=inRouterAry.inject({}){|x,kv|k,v=kv;x[k]={:cost=>1000000,:used=>false};x}
