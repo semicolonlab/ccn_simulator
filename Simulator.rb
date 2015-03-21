@@ -1,4 +1,5 @@
 # coding: utf-8
+# codOAing: utf-8
 $gSettingAry={ # コマンドライン引数なしのとき使用するパラメータ
   time:               0,                     # 変更不可
   message:            :setting,              # 変更不可
@@ -24,6 +25,8 @@ $gSettingAry={ # コマンドライン引数なしのとき使用するパラメ
   bcViewerLog:        0,                     # BCViewer用ログ出力フラグ
   bandWidth:          false,                # 帯域再現有無フラグ
 }
+$gRandom = Random.new( $gSettingAry[ :seed ] )  
+
 require "./Statics.rb"
 
 class ROUTER
@@ -219,9 +222,8 @@ class CONTENT
   end
 
   def self.GetRandomContentId
-    total = 0
-    rand = $gRandom.rand( @@total )
-    contentId = self.FindContentIdFast( rand )
+    random = $gRandom.rand( @@total )
+    contentId = self.FindContentIdFast( random )
   end
 end
 
@@ -261,7 +263,6 @@ class LINK
         return inEvent[:time]
       end
     }
-
     cOverQueryLimit = lambda{
       return false if inEvent[:queryHopCount] < $gSettingAry[ :queryLimitHopCount ]
       puts inEvent[:contentId]
@@ -277,7 +278,7 @@ class LINK
     EVENT.Register( inEvent )
   end
   
-  def self.RegisterContent( inEvent ) # LINK.RegisterContent()
+  def self.RegisterContent( inEvent )
     cCalcSendTime = lambda{
       cCalcSendTime_BandWidth = lambda{
         time = [ @@mLinkAry[inEvent[:nodeId]][inEvent[:nextNodeId]] ,inEvent[:time]].max
@@ -313,39 +314,58 @@ class LINK
     end
   end
   def self.SendContent( inEvent ) # Link.SendContent()
-      inEvent[:time] += $gSettingAry[ :contentPacket ]/ $gSettingAry[ :contentPacket ] / $gSettingAry[ :linkWidth ]
-      inEvent[:pastNodeId] = inEvent[:nodeId] # 過去のノードを設定
-      inEvent[:nodeId] = inEvent[:nextNodeId] # 【ノードID】に次ノードのIDを設定
-      inEvent[:nextNodeId] = nil # 【転送先ノード】をリセット
-      inEvent[:contentHopCount] += 1 # 【コンテンツホップ数】を増やす
-
-      if inEvent[ :nodeId ].to_s.index( "U" ) != nil # 【ユーザ】へ転送か？
-        inEvent[:message] = :userReceiveContent
-        inEvent[:contentReceiveTime] = inEvent[ :time ] + ( inEvent[:contentPacketSize] ) / $gSettingAry[ :linkWidth ]
-        EVENT.Register( inEvent ) # 【ユーザ】へ転送
-        return 
-      else # 【ルータ】転送
-        inEvent[:message] = :routerReceiveContent # 次イベントを【ルータコンテンツ受信処理】に設定
-        EVENT.Register( inEvent ) # 【ルータ】へ転送
-        return 
-      end
+    cSendContentToUserQ = lambda{
+      inEvent[ :nodeId ].to_s.index( "U" ) != nil
+    }
+    cSendContentToUser = lambda{
+      inEvent[ :message ] = :userReceiveContent
+      inEvent[ :contentReceiveTime ] = inEvent[ :time ] + inEvent[ :contentPacketSize ] / $gSettingAry[ :linkWidth ]
+      EVENT.Register( inEvent )
+    }
+    cSendConentToRouterQ = lambda{
+      inEvent[ :nodeId ].to_s.index( "U" ) == nil
+    }
+    cSendConentToRouter = lambda{
+      inEvent[ :message ] = :routerReceiveContent
+      EVENT.Register( inEvent )
+    }
+    
+    #実際の処理
+    inEvent[:time] += $gSettingAry[ :contentPacket ] / $gSettingAry[ :linkWidth ]
+    inEvent[:pastNodeId] = inEvent[:nodeId]
+    inEvent[:nodeId] = inEvent[:nextNodeId]
+    inEvent[:nextNodeId] = nil
+    inEvent[:contentHopCount] += 1
+    if cSendContentToUserQ.call
+      cSendContentToUser.call
+    elsif cSendConentToRouterQ.call
+      cSendConentToRouter.call
+    else
+      ERROR( "#{__FILE__} #{__LINE__} Error LINK.SendContent")
+    end
   end
 end
 
-class EVENT # 全てのイベント管理するクラス
-  @@mEventAry = []
-  @@mLogStr = ""
-  @@mLastEventTime = - 10
-  @@mEventCount = -1  
+class EVENT # 全てのイベントを管理
+  @@mEventAry      = []
+  @@mLogStr        = ""
+  @@mLastEventTime = -1
+  @@mEventCount    = -1  
+
+  def self.SaveLog()
+    open( $gSettingAry[:logFile], "w" ){|f|
+      f.write( "#{$gSettingAry.inspect},\n#{@@mLogStr}" )
+    }
+  end  
   
-  def self.Register(inEvent) # イベントを登録する
-    binarySearch = lambda{ | time |  # 二分探索でイベント追加位置を検索
+  def self.Register( inEvent ) # イベントを登録
+    binarySearch = lambda{ | time |  # 二分探索
       low = 0
       high = @@mEventAry.length - 1
       return 0 if high == -1
       while low <= high
         mid = ( low + high ) / 2
-        case time  <=> @@mEventAry[ mid ][:time]
+        case time  <=> @@mEventAry[ mid ][ :time ]
           when 0 then return mid
           when 1 then high = mid - 1
           when -1 then low = mid + 1
@@ -353,59 +373,54 @@ class EVENT # 全てのイベント管理するクラス
       end
       low
     }
-    pos = binarySearch.call( inEvent[:time] ) || @@mEventAry.length
+    pos = binarySearch.call( inEvent[ :time ] ) || @@mEventAry.length
     @@mEventAry[ pos, 0 ] = inEvent
   end
 
-  def self.SaveLog()
-    open( $gSettingAry[:logFile], "w" ){|f| f.write( $gSettingAry.inspect + ",\n" +@@mLogStr ) }
-  end  
-
-  def self.Run( event )
-      @@mEventCount += 1
-      STATICS.ReadLogAry( event )
-      Error("#{__FILE__}#{__LINE__} EventTime #{event}") if @@mLastEventTime > event[ :time ]
-
-      case event[:message]
-        when :routerReceiveQuery         then ROUTER.ReceiveQuery( event )
-        when :routerReceiveContent       then ROUTER.ReceiveContent( event )
-        when :routerCreateBc             then ROUTER.CreateBc( event )
-        when :routerDeleteBc             then ROUTER.DeleteBc( event )
-        when :routerDeleteBcAry          then ROUTER.DeleteBcAry( event )
-        when :routerCacheHit             then ROUTER.CacheHit( event )
-        when :routerCreateCache          then ROUTER.CreateCache( event )
-        when :routerDeleteCache          then ROUTER.DeleteCache( event )
-        when :userGenerateQuery          then USER.GenerateQuery( event )
-        when :userReceiveContent         then USER.ReceiveContent( event )
-        when :serverReceiveQuery         then SERVER.ReceiveQuery( event )
-        when :linkRegisterQuery          then LINK.RegisterQuery( event )
-        when :linkRegisterContent        then LINK.RegisterContent( event )
-        when :linkSendQuery              then LINK.SendQuery( event )
-        when :linkSendContent            then LINK.SendContent( event )
-        when :staticsInit                then STATICS.init()
-        when :staticsSave                then STATICS.Save()
-      else
-        Error( "#{__FILE__} #{__LINE__} unknow event #event[:message]")
-      end
-  end  
-
   def self.start()
-    puts "Start EVENT"
     @@mEventAry[0] = { 
-      time: 0, 
-      message: :userGenerateQuery, 
-      contentId: CONTENT.GetRandomContentId, 
+      time:       0, 
+      message:    :userGenerateQuery, 
+      contentId:  CONTENT.GetRandomContentId, 
       userNodeId: USER.GetRandomUserNodeId
     }
-    while ( event = @@mEventAry.pop )!= nil
-      @@mLastEventTime = event[:time]
-      puts event[:time].to_i.to_s + " / #{$gSettingAry[:simulationStopTime]} #{@@mEventAry.length} #{@@mEventCount}" if @@mEventCount & 4095 == 0
+    puts "Simulation Loop Start"
+    while ( event = @@mEventAry.pop ) != nil && event[:time] <= $gSettingAry[ :simulationStopTime ]
       Run( event )
-      break if event[:time] > $gSettingAry[:simulationStopTime]
     end
-    puts $gSettingAry[:simulationStopTime].to_s + " / " + $gSettingAry[:simulationStopTime].to_s + " " + @@mEventCount.to_s
-    puts "End Event"
+    puts "#{$gSettingAry[:simulationStopTime]} / #{$gSettingAry[:simulationStopTime]} #{@@mEventCount}"
   end
+
+  def self.Run( event ) # イベントを実行
+    @@mEventCount += 1
+    @@mLastEventTime = event[:time]
+      
+    Error("#{__FILE__}#{__LINE__} EventTime #{event}") if @@mLastEventTime > event[ :time ]
+    STATICS.ReadLogAry( event )
+    puts "#{event[:time].to_i} / #{$gSettingAry[:simulationStopTime]} #{@@mEventAry.length} #{@@mEventCount}" if @@mEventCount & 4095 == 0
+
+    case event[:message]
+      when :routerReceiveQuery   then ROUTER.ReceiveQuery( event )
+      when :routerReceiveContent then ROUTER.ReceiveContent( event )
+      when :routerCreateBc       then ROUTER.CreateBc( event )
+      when :routerDeleteBc       then ROUTER.DeleteBc( event )
+      when :routerDeleteBcAry    then ROUTER.DeleteBcAry( event )
+      when :routerCacheHit       then ROUTER.CacheHit( event )
+      when :routerCreateCache    then ROUTER.CreateCache( event )
+      when :routerDeleteCache    then ROUTER.DeleteCache( event )
+      when :userGenerateQuery    then USER.GenerateQuery( event )
+      when :userReceiveContent   then USER.ReceiveContent( event )
+      when :serverReceiveQuery   then SERVER.ReceiveQuery( event )
+      when :linkRegisterQuery    then LINK.RegisterQuery( event )
+      when :linkRegisterContent  then LINK.RegisterContent( event )
+      when :linkSendQuery        then LINK.SendQuery( event )
+      when :linkSendContent      then LINK.SendContent( event )
+      when :staticsInit          then STATICS.init()
+      when :staticsSave          then STATICS.Save()
+    else
+      Error( "#{__FILE__} #{__LINE__} unknow event #event[:message]")
+    end
+  end  
 end
 
 def Error( inErrorStr )
@@ -413,7 +428,7 @@ def Error( inErrorStr )
   exit
 end
 
-class Start
+class Main
 
   def self.start
     cReadSettingFile = lambda{| inFilePath | # シミュレーションパラメータファイル読み込み
@@ -426,7 +441,7 @@ class Start
       !File.exist?( "#{$gSettingAry[:briteFile]}.log" ) && File.exist?( "#{$gSettingAry[:briteFile]}" )
     }
     cSetRouterAryFromLogFile = lambda{ |inFilePath| # 配列ファイル読み込み
-      open( inFilePath ,"r" ){| f | ROUTER.SetRouterAry( eval( f.read ) ) }
+      open( inFilePath ,"r" ){| f | ROUTER.SetRouterAry( eval( f.read ) ) } 
       routerAry = ROUTER.GetRouterAry
       routerAry.each{|id,router| routerAry[id][:hopCountAry][id] = 0 }
     }
@@ -463,12 +478,11 @@ class Start
     cSaveResult = lambda{
       STATICS.SaveLog
     }
+    # 実際の処理
     startTime = Time.now
-    $gRandom = Random.new( $gSettingAry[ :seed ] )  
-
-    cReadSettingFile.call( ARGV[ 0 ] )        if ARGV[ 0 ] != nil
-    ReadBriteFile( $gSettingAry[:briteFile].to_s ) if cReadBriteFileQ.call
-    cSetRouterAryFromLogFile.call( "#{$gSettingAry[ :briteFile ]}.log" )    
+    cReadSettingFile.call( ARGV[ 0 ] ) if ARGV[ 0 ] != nil
+    ReadBriteFile                      if cReadBriteFileQ.call
+    cSetRouterAryFromLogFile.call( "#{$gSettingAry[ :briteFile ]}.log" )
     cSetRouterType.call
     cSetSimulaterSetting.call  
     EVENT.start
@@ -478,7 +492,8 @@ class Start
     puts "Time : " + ( Time.now - startTime ).to_s + " s"
   end
   
-  def self.ReadBriteFile(inFilePath)
+  def self.ReadBriteFile()
+    inFilePath = $gSettingAry[:briteFile].to_s
     puts "Start ReadBriteFile #{inFilePath}"
     routerAry=open(inFilePath).read.split("\n").drop(4).take_while{|i|i!=""}.length.times.inject({}){|x,i|x["R#{i}".to_sym]={
       :id            => "R#{i}".to_sym,
@@ -514,4 +529,4 @@ class Start
   end
 end
 
-Start.start
+Main.start
