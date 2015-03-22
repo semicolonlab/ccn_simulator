@@ -38,10 +38,14 @@ class ROUTER
 
   def self.GetRouterAry() @@mRouterAry end # クラス変数のGetter
   
-  def self.SetRouterAry(routerAry) @@mRouterAry = routerAry end # クラス変数のSetter
-  
   def self.Init()
-    @@mRouterAry.each{ |id,router|
+    inFilePath = "#{$gSettingAry[ :briteFile ]}.log"
+    open( inFilePath ,"r" ){| f | @@mRouterAry = ( eval( f.read ) ) } 
+    @@mRouterAry.each{| id, router| router[:hopCountAry][id] = 0 }
+    @@mRouterAry.each{| id, router | 
+      router[ :routerType ] = $gSettingAry[ :routerType ] 
+    }
+    @@mRouterAry.each{ | id, router |
       routerType = router[ :routerType ]
       send( "Router_#{ routerType }_Init" )
     }
@@ -208,15 +212,14 @@ class CONTENT
   @@mTime = 0
   @@mContentIdAry = []
   def self.GetContentAry() @@mContentAry end
-  def self.SetPopularity()
-    puts "Start SetPopularity"
+  def self.Init( inServerAry )
     sum = ( 1..$gSettingAry[:contentNum] ).to_a.inject(0){|x,n| x += 1 / n**$gSettingAry[:zipf] }
     populality = ( 1..$gSettingAry[:contentNum] ).to_a.map{ | k | ( 1 / k**$gSettingAry[:zipf] ) / sum }
     populality.map!{|i| @@total += i }
-    serverIdAry = SERVER.GetServerAry.keys
+    serverIdAry = inServerAry.keys
     populality.each_with_index.map{|x,i| 
       serverId = serverIdAry[ $gRandom.rand( $gSettingAry[:serverNum] ).floor ]
-      serverRouterId = SERVER.GetServerAry[ serverId ][:routerId]
+      serverRouterId = inServerAry[ serverId ][:routerId]
       @@mContentAry["C#{i}".to_sym] = {
         :popularity    => x,
         :serverId      => serverId,
@@ -254,7 +257,6 @@ class LINK
   end
   
   def self.Init( inRouterAry, inUserAry ) # LINK.Init()
-    puts "Start LINK.Init" # 【リンク設定開始】
     inRouterAry.keys.each{|i| @@mLinkAry[i] = inRouterAry[i][:edgeAry].inject({}){|x,j| x[j]=0; x} } # 【ルータ・ルータ間のリンク】を設定
     CONTENT.GetContentAry.each{|k,i| # 【サーバ・ルータ間のリンク】を設定
       @@mLinkAry[i[:serverNodeId]]={} # 【サーバからのリンク】を登録
@@ -399,7 +401,7 @@ class EVENT # 全てのイベントを管理
 
   def self.start()
     @@mEventAry[ 0 ] = USER.get_user_generate_query( time = 0 ) # 起動イベント
-    puts "Simulation Loop Start"
+    puts "Simulation Start Loop"
     while ( event = @@mEventAry.pop ) != nil && event[:time] <= $gSettingAry[ :simulationStopTime ]
       Run( event )
     end
@@ -412,7 +414,6 @@ class EVENT # 全てのイベントを管理
     Error("#{__FILE__}#{__LINE__} EventTime #{event}") if @@mLastEventTime > event[ :time ]
     STATICS.ReadLogAry( event )
     puts "#{event[:time].to_i} / #{$gSettingAry[:simulationStopTime]} #{@@mEventAry.length} #{@@mEventCount}" if @@mEventCount & 4095 == 0
-    p event if event[:queryId] == 1
     case event[:message]
       when :routerReceiveQuery   then ROUTER.ReceiveQuery( event )
       when :routerReceiveContent then ROUTER.ReceiveContent( event )
@@ -451,16 +452,6 @@ class Main
     cReadBriteFileQ = lambda{
       !File.exist?( "#{$gSettingAry[:briteFile]}.log" ) && File.exist?( "#{$gSettingAry[:briteFile]}" )
     }
-    cSetRouterAryFromLogFile = lambda{ |inFilePath| # 配列ファイル読み込み
-      open( inFilePath ,"r" ){| f | ROUTER.SetRouterAry( eval( f.read ) ) } 
-      routerAry = ROUTER.GetRouterAry
-      routerAry.each{|id,router| routerAry[id][:hopCountAry][id] = 0 }      
-    }
-    cSetRouterType = lambda{ 
-      ROUTER.GetRouterAry.each{| id, router | 
-        router[ :routerType ] = $gSettingAry[ :routerType ] 
-      }
-    }  
     cSetSimulaterSetting = lambda{ # シミュレータ初期設定
       cRefreshSettingAry = lambda{| inRouterAry, inLinkAry |
         $gSettingAry[:linkWidth] *= 1.0
@@ -469,21 +460,14 @@ class Main
         $gSettingAry[:routerNum] = inRouterAry.map{|k,v| k}.length
         $gSettingAry[:linkNum] = inLinkAry.inject(0){|x1,v1| x1 += v1.length }
       }
-      cSetBCViewerSetting = lambda{ # BCViewerログ出力初期設定
-        return if $gSettingAry[:bcViewerLog] == nil
-        LOG.SetFileName
-        puts "LinkInfo"
-        LOG.LinkInfo
-        puts "ContentInfo"
-        LOG.ContentInfo
-      }
-      puts "Start SetSimulaterSetting"
+
+      puts "Simulation Start Setting"
+      ROUTER.Init
       SERVER.Init( ROUTER.GetRouterAry )
-      CONTENT.SetPopularity
+      CONTENT.Init( SERVER.GetServerAry )
       USER.Init( ROUTER.GetRouterAry )
       LINK.Init( ROUTER.GetRouterAry, USER.GetUserAry )
       STATICS.Init 
-      ROUTER.Init
       cRefreshSettingAry.call( ROUTER.GetRouterAry, LINK.GetLinkAry )
     }
     cSaveResult = lambda{
@@ -493,8 +477,6 @@ class Main
     startTime = Time.now
     cReadSettingFile.call( ARGV[ 0 ] ) if ARGV[ 0 ] != nil
     Main.ReadBriteFile                 if cReadBriteFileQ.call
-    cSetRouterAryFromLogFile.call( "#{$gSettingAry[ :briteFile ]}.log" )
-    cSetRouterType.call
     cSetSimulaterSetting.call  
     EVENT.start
     puts "Time : " + ( Time.now - startTime ).to_s + " s"
@@ -505,7 +487,7 @@ class Main
   
   def self.ReadBriteFile
     inFilePath = $gSettingAry[:briteFile].to_s
-    puts "Start ReadBriteFile #{inFilePath}"
+    puts "Simulation Read BriteFile #{inFilePath}"
     routerAry=open(inFilePath).read.split("\n").drop(4).take_while{|i|i!=""}.length.times.inject({}){|x,i|x["R#{i}".to_sym]={
       :id            => "R#{i}".to_sym,
       :routingTblAry => {}, # key 到着ノードID, value 次ノードID
