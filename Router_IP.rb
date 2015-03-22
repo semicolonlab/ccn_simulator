@@ -3,32 +3,18 @@ module Router_IP
   
   end
 
-  def Router_IP_ReceiveQuery( inEvent ) 
-    if inEvent[:nodeId] == inEvent[:serverRouterId]
-      inEvent[:message] = :linkSendQuery
-      inEvent[:nextNodeId] = inEvent[:serverNodeId]
-      EVENT.Register( inEvent )
-      return
-    else 
-      inEvent[ :message ] = :linkSendQuery
-      inEvent[ :nextNodeId ] = ROUTER.GetRouterAry[ inEvent[ :nodeId ] ][ :routingTblAry ][ inEvent[ :serverRouterId ] ]
-      EVENT.Register( inEvent )
-      return
-    end
+  def Router_IP_ReceiveQuery( inEvent )
+    router = ROUTER.GetRouterAry[ inEvent[ :nodeId ] ]
+    inEvent[ :message ] = :linkSendQuery
+    inEvent[ :nextNodeId ] = router[ :routingTblAry ][ inEvent[ :serverNodeId ] ]
+    EVENT.Register( inEvent )
   end
   
   def Router_IP_ReceiveContent( inEvent )
-    if inEvent[ :nodeId ] == inEvent[:userRouterId]
-      inEvent[ :message ] = :linkSendContent
-      inEvent[ :nextNodeId ] = inEvent[ :userNodeId ]
-      EVENT.Register( inEvent )
-      return
-    else
-      inEvent[ :message ] = :linkSendContent
-      inEvent[ :nextNodeId ] = ROUTER.GetRouterAry[ inEvent[ :nodeId ] ][ :routingTblAry ][ inEvent[ :userRouterId ] ]
-      EVENT.Register( inEvent )
-      return
-    end
+    router = ROUTER.GetRouterAry[ inEvent[ :nodeId ] ]
+    inEvent[ :message ] = :linkSendContent
+    inEvent[ :nextNodeId ] = router[ :routingTblAry ][ inEvent[ :userNodeId ] ]
+    EVENT.Register( inEvent )
   end
 
   def Router_IP_CreateCache( inEvent )

@@ -1,10 +1,9 @@
 # coding: utf-8
-# codOAing: utf-8
 $gSettingAry={ # コマンドライン引数なしのとき使用するパラメータ
   time:               0,                     # 変更不可
   message:            :setting,              # 変更不可
   briteFile:          "N500L2000WAX1.brite", # BRITEファイルを指定
-  routerType:         :BC,                   # BC,TERC,POP,BCPOP
+  routerType:         :IP,                   # BC,TERC,POP,BCPOP
   simulationTime:     1000,                  # クエリ生成時間
   simulationStopTime: 110000,                # シミュレーション強制終了時間
   queryGenerateTime:  1.0,                   # 平均クエリ生成時間間隔
@@ -95,19 +94,25 @@ class USER
     @@mUserAry.keys[ $gRandom.rand( @@mUserAry.length ) ] 
   end
 
-  def self.Init()
-    ROUTER.GetRouterAry.keys.each{|i| 
+  def self.Init( inRouterAry )
+    inRouterAry.keys.each{|i| 
       $gSettingAry[:userNum].times{|j|
         @@mUserAry[ "#{i}.U#{j}".to_sym]={
-          # Nothing
+          routerId: i,
         }
-      } 
+      }
     }
+    @@mUserAry.each{ |user_id, user |
+      inRouterAry.each{| router_id, router |
+        router[ :routingTblAry ][ user_id ] = router[ :routingTblAry ][ user[:routerId ] ]
+      }
+      inRouterAry[ user[ :routerId ] ][ :routingTblAry ][ user_id ] = user_id
+    }    
   end
   
-  def self.GeneratePacket( event )
+  def self.get_link_register_query( event )
     serverNodeId = CONTENT.GetContentAry[event[:contentId]][:serverNodeId]
-    packet = {
+    {
       time:               1.0 * event[:time],
       message:            :linkRegisterQuery,
       nodeId:             event[:userNodeId],
@@ -131,20 +136,25 @@ class USER
     }
   end
 
-  def self.GenerateQuery( event )
-    query = GeneratePacket( event )
-    EVENT.Register( query )
-    userGenerateQuery = {
-      :time              => event[:time] + $gSettingAry[ :queryGenerateTime ],
+  def self.get_user_generate_query( in_time )
+    {
+      :time              => in_time,
       :message           => :userGenerateQuery,
       :contentId         => CONTENT.GetRandomContentId,
       :userNodeId        => USER.GetRandomUserNodeId,
     }
-    EVENT.Register( userGenerateQuery ) if event[ :time ] <= $gSettingAry[ :simulationTime ]
+  end
+
+  def self.GenerateQuery( event )
+    link_register_query = get_link_register_query( event )
+    EVENT.Register( link_register_query )
+    time = event[:time] + $gSettingAry[ :queryGenerateTime ]
+    user_generate_query = get_user_generate_query( time )
+    EVENT.Register( user_generate_query ) if event[ :time ] <= $gSettingAry[ :simulationTime ]
   end
 
   def self.ReceiveContent( inEvent )
-    Error( "#{__FILE__} #{__LINE__} viaNodeIdAry" ) if inEvent[:viaNodeIdAry].length > 0
+
   end
 
 end
@@ -158,7 +168,8 @@ class SERVER
     cResetServerAry = lambda{| ioServerAry, inServerNum |
       inServerNum.times{| i |
         ioServerAry[ "S#{i}".to_sym ] = {
-          :routerId => nil,
+          routerId:     nil,
+          serverNodeId: nil
         }
       }
     }
@@ -169,15 +180,24 @@ class SERVER
         routerIdCloneAryLen = routerIdCloneAry.length
         routerId = routerIdCloneAry.delete_at( $gRandom.rand( routerIdCloneAry.length ).floor )
         ioServerAry[ "S#{i}".to_sym ][ :routerId ] = routerId
+        ioServerAry[ "S#{i}".to_sym ][ :serverNodeId ] = "#{routerId.to_s}.S#{i}".to_sym
       }
-    }
+    }    
     cResetServerAry.call( @@mServerAry, $gSettingAry[ :serverNum ] )
-    cSetServerRouterId.call( @@mServerAry, inRouterAry.keys )    
+    cSetServerRouterId.call( @@mServerAry, inRouterAry.keys )
+
+    @@mServerAry.each{ |server_id, server |
+      inRouterAry.each{| router_id, router |
+        router[ :routingTblAry ][ server[:serverNodeId ] ] = router[ :routingTblAry ][ server[ :routerId ] ]
+      }
+      inRouterAry[ server[ :routerId ] ][ :routingTblAry ][ server[:serverNodeId] ] = server[ :serverNodeId ]
+    }
+    
   end
   def self.ReceiveQuery( inEvent )
     inEvent[ :contentSendTime ] = inEvent[ :time ]
     inEvent[ :message ] = :linkSendContent
-    inEvent[ :nextNodeId ] = inEvent[ :serverRouterId ]
+    inEvent[ :nextNodeId ] = inEvent[ :serverNodeId ].to_s.split(".")[ 0 ].to_sym
     LINK.RegisterContent( inEvent )
   end
 end
@@ -331,7 +351,7 @@ class LINK
     }
     
     #実際の処理
-    inEvent[:time] += $gSettingAry[ :contentPacket ] / $gSettingAry[ :linkWidth ]
+    inEvent[:time] += $gSettingAry[ :queryPacket ] / $gSettingAry[ :linkWidth ]
     inEvent[:pastNodeId] = inEvent[:nodeId]
     inEvent[:nodeId] = inEvent[:nextNodeId]
     inEvent[:nextNodeId] = nil
@@ -378,12 +398,7 @@ class EVENT # 全てのイベントを管理
   end
 
   def self.start()
-    @@mEventAry[0] = { 
-      time:       0, 
-      message:    :userGenerateQuery, 
-      contentId:  CONTENT.GetRandomContentId, 
-      userNodeId: USER.GetRandomUserNodeId
-    }
+    @@mEventAry[ 0 ] = USER.get_user_generate_query( time = 0 ) # 起動イベント
     puts "Simulation Loop Start"
     while ( event = @@mEventAry.pop ) != nil && event[:time] <= $gSettingAry[ :simulationStopTime ]
       Run( event )
@@ -394,11 +409,10 @@ class EVENT # 全てのイベントを管理
   def self.Run( event ) # イベントを実行
     @@mEventCount += 1
     @@mLastEventTime = event[:time]
-      
     Error("#{__FILE__}#{__LINE__} EventTime #{event}") if @@mLastEventTime > event[ :time ]
     STATICS.ReadLogAry( event )
     puts "#{event[:time].to_i} / #{$gSettingAry[:simulationStopTime]} #{@@mEventAry.length} #{@@mEventCount}" if @@mEventCount & 4095 == 0
-
+    p event if event[:queryId] == 1
     case event[:message]
       when :routerReceiveQuery   then ROUTER.ReceiveQuery( event )
       when :routerReceiveContent then ROUTER.ReceiveContent( event )
@@ -415,8 +429,6 @@ class EVENT # 全てのイベントを管理
       when :linkRegisterContent  then LINK.RegisterContent( event )
       when :linkSendQuery        then LINK.SendQuery( event )
       when :linkSendContent      then LINK.SendContent( event )
-      when :staticsInit          then STATICS.init()
-      when :staticsSave          then STATICS.Save()
     else
       Error( "#{__FILE__} #{__LINE__} unknow event #event[:message]")
     end
@@ -429,7 +441,6 @@ def Error( inErrorStr )
 end
 
 class Main
-
   def self.start
     cReadSettingFile = lambda{| inFilePath | # シミュレーションパラメータファイル読み込み
       return if inFilePath  == nil || !File.exist?( inFilePath  )
@@ -443,7 +454,7 @@ class Main
     cSetRouterAryFromLogFile = lambda{ |inFilePath| # 配列ファイル読み込み
       open( inFilePath ,"r" ){| f | ROUTER.SetRouterAry( eval( f.read ) ) } 
       routerAry = ROUTER.GetRouterAry
-      routerAry.each{|id,router| routerAry[id][:hopCountAry][id] = 0 }
+      routerAry.each{|id,router| routerAry[id][:hopCountAry][id] = 0 }      
     }
     cSetRouterType = lambda{ 
       ROUTER.GetRouterAry.each{| id, router | 
@@ -469,7 +480,7 @@ class Main
       puts "Start SetSimulaterSetting"
       SERVER.Init( ROUTER.GetRouterAry )
       CONTENT.SetPopularity
-      USER.Init
+      USER.Init( ROUTER.GetRouterAry )
       LINK.Init( ROUTER.GetRouterAry, USER.GetUserAry )
       STATICS.Init 
       ROUTER.Init
@@ -481,7 +492,7 @@ class Main
     # 実際の処理
     startTime = Time.now
     cReadSettingFile.call( ARGV[ 0 ] ) if ARGV[ 0 ] != nil
-    ReadBriteFile                      if cReadBriteFileQ.call
+    Main.ReadBriteFile                 if cReadBriteFileQ.call
     cSetRouterAryFromLogFile.call( "#{$gSettingAry[ :briteFile ]}.log" )
     cSetRouterType.call
     cSetSimulaterSetting.call  
@@ -492,7 +503,7 @@ class Main
     puts "Time : " + ( Time.now - startTime ).to_s + " s"
   end
   
-  def self.ReadBriteFile()
+  def self.ReadBriteFile
     inFilePath = $gSettingAry[:briteFile].to_s
     puts "Start ReadBriteFile #{inFilePath}"
     routerAry=open(inFilePath).read.split("\n").drop(4).take_while{|i|i!=""}.length.times.inject({}){|x,i|x["R#{i}".to_sym]={
