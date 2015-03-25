@@ -49,6 +49,7 @@ setting_fileの解説
      指定されたルータタイプに基づいた処理が行われる。
      プログラム的にはRouter_#{routerType}モジュールが実行される
 +    `briteFile`
+
       [Brite][Brite]で出力されたトポロジファイル名を指定する
 +    `message`  イベントの内容（変更不可）
 
