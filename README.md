@@ -49,7 +49,7 @@ setting_fileの解説
      指定されたルータタイプに基づいた処理が行われる。
      プログラム的にはRouter_#{routerType}モジュールが実行される
 +    `briteFile`  
-      briteで出力されたトポロジファイルを指定する
+      briteで出力されたトポロジファイル名を指定する
 +    `message`  イベントの内容（変更不可）
 
 briteFile:          "N500L2000WAX1.brite", # BRITEファイルを指定              
