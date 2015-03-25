@@ -41,12 +41,15 @@ setting_fileの解説
 
 パラメータの解説
 ----------------
-+    `time`        イベント実行時間（変更不可）
-+    `message`     イベント実行内容（変更不可）
++    `time`        
+     イベント実行時間（変更不可）
++    `message`     
+      イベント実行内容（変更不可）
 +    `routerType`  
-     ルータタイプを指定し、Router_#{routerType}モジュール内容の処理が実際に実行される
-
-+    `briteFile`  briteで出力されたトポロジファイルを指定する
+     指定されたルータタイプに基づいた処理が行われる。
+     プログラム的にはRouter_#{routerType}モジュールが実行される
++    `briteFile`  
+      briteで出力されたトポロジファイルを指定する
 +    `message`  イベントの内容（変更不可）
 
 briteFile:          "N500L2000WAX1.brite", # BRITEファイルを指定              
