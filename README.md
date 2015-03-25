@@ -108,4 +108,4 @@ Dual licensed under the [MIT license][MIT] and [GPL license][GPL].
 [Apache]: http://www.apache.org/licenses/LICENSE-2.0
 [MIT]: http://www.opensource.org/licenses/mit-license.php
 [GPL]: http://www.gnu.org/licenses/gpl.html
-[Brite]: http://www.apache.org/licenses/LICENSE-2.0
+[Brite]: http://www.cs.bu.edu/brite/
