@@ -7,10 +7,10 @@ CCNシミュレータ
 ------
 起動コマンド
 
-    ruby Simulator.rb settingFile
+    ruby Simulator.rb setting_file
 
 
-settingFileの解説
+setting_fileの解説
 ------
 
         {
