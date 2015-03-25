@@ -10,7 +10,7 @@ CCNシミュレータ
     ruby Simulator.rb settingFile
 
 
-`settingFile`の説明
+settingFileの解説
 ------
 
         {
@@ -38,11 +38,6 @@ CCNシミュレータ
             bcViewerLog:        0,                     # BCViewer用ログ出力フラグ         
             bandWidth:          false,                # 帯域再現有無フラグ                
         }
-
-        
-        
-        
-
 
 パラメータの解説
 ----------------
