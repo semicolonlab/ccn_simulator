@@ -41,8 +41,11 @@ setting_fileの解説
 
 パラメータの解説
 ----------------
-+    `time`:               0,       
-+    'message':            :setting,
++    `time`        イベント実行時間（変更不可）
++    'message'     イベント実行内容（変更不可）
++    'routerType'  ルータタイプを指定
++    'message'  イベントの内容（変更不可）
++    'message'  イベントの内容（変更不可）
 
 briteFile:          "N500L2000WAX1.brite", # BRITEファイルを指定              
         routerType:         :IP,                   # BC,TERC,POP,BCPOP                
