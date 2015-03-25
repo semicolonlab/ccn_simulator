@@ -12,6 +12,7 @@ CCNシミュレータ
 
 +   `file` :
     _file_の説明
+
         {
             time:               0,                     # 変更不可                         
             message:            :setting,              # 変更不可                         
