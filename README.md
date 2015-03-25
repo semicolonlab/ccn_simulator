@@ -5,9 +5,11 @@
 使い方
 ------
 起動コマンド(引数なしの場合)
+    
     ruby Simulator.rb
     
 起動コマンド(引数ありの場合)
+
     ruby Simulator.rb file
     
 ### インライン ###
