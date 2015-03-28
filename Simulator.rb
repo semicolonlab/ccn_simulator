@@ -1,31 +1,4 @@
 # coding: utf-8
-$gSettingAry={ # コマンドライン引数なしのとき使用するパラメータ
-  time:               0,                     # 変更不可
-  message:            :setting,              # 変更不可
-  briteFile:          "N500L2000WAX1.brite", # BRITEファイルを指定
-  routerType:         :IP,                   # BC,TERC,POP,BCPOP
-  simulationTime:     1000,                  # クエリ生成時間
-  simulationStopTime: 110000,                # シミュレーション強制終了時間
-  queryGenerateTime:  1.0,                   # 平均クエリ生成時間間隔
-  seed:               1,                     # 乱数シード
-  routerNum:          nil,                   # 設定ファイルから自動設定
-  linkNum:            nil,                   # 設定ファイルから自動設定
-  userNum:            1,                     # ルータに接続するユーザ数
-  serverNum:          500,                   # ルータに接続するサーバ数
-  contentNum:         1000,                    # コンテンツ数 
-  routerCacheSize:    2,                     # ルータキャッシュサイズ
-  zipf:               0.7,                   # zipf係数
-  linkWidth:          1.0,                   # 帯域幅 1Gbps = 125 kBps
-  contentPacket:      10.0,                  # パケット数 100k
-  queryPacket:        1.0,                   # パケット数 1k
-  queryLimitHopCount: 100,                   # クエリ最大ホップ数
-  logFile:            "statics.log",         # ログファイル出力ファイル名
-  POP_HistoryNum:     2000,                  # BCPOPクエリ履歴数
-  bcViewerLog:        0,                     # BCViewer用ログ出力フラグ
-  bandWidth:          false,                # 帯域再現有無フラグ
-}
-$gRandom = Random.new( $gSettingAry[ :seed ] )  
-
 require "./Statics.rb"
 
 class ROUTER
@@ -443,11 +416,18 @@ end
 
 class Main
   def self.start
+    cReadSettingFileQuestion = lambda{
+      ARGV[0] != nil && File.exist?( ARGV[0] )
+    }
+
     cReadSettingFile = lambda{| inFilePath | # シミュレーションパラメータファイル読み込み
-      return if inFilePath  == nil || !File.exist?( inFilePath  )
-      puts "Read " + inFilePath
       open( inFilePath, "r" ){| f | $gSettingAry = eval( f.read ) }
-      puts $gSettingAry
+      puts "########################################"
+      puts "Read " + inFilePath
+      $gSettingAry.each{|k,v|puts "#{k}: #{v}"}
+      puts "########################################"
+      $gRandom = Random.new( $gSettingAry[ :seed ] )  
+
     }
     cReadBriteFileQ = lambda{
       !File.exist?( "#{$gSettingAry[:briteFile]}.log" ) && File.exist?( "#{$gSettingAry[:briteFile]}" )
@@ -475,7 +455,11 @@ class Main
     }
     # 実際の処理
     startTime = Time.now
-    cReadSettingFile.call( ARGV[ 0 ] ) if ARGV[ 0 ] != nil
+    if cReadSettingFileQuestion.call
+      cReadSettingFile.call( ARGV[ 0 ] ) 
+    else
+      Error("#{__FILE__} #{__LINE__} setting_file error")
+    end
     Main.ReadBriteFile                 if cReadBriteFileQ.call
     cSetSimulaterSetting.call  
     EVENT.start
