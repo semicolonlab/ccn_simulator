@@ -116,6 +116,6 @@ setting_fileの解説
 ----------
 Copyright &copy; 2015 Kotaro Fujii
 Distributed under the [MIT License][mit].
- 
+
 [MIT]: http://www.opensource.org/licenses/mit-license.php
 [Brite]: http://www.cs.bu.edu/brite/

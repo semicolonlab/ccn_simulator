@@ -125,6 +125,7 @@ class STATICS #シミュレション結果出力クラス
     @@linkLoadAry["#{from}-#{to}"]["packet"] += log[:contentPacketSize]
   end
 
+
   def self.SaveRouterReceiveQuery( filePath )
     routerReceiveQueryStr = "R,T,"
     CONTENT.GetContentAry.each{|contentId,content| routerReceiveQueryStr << "#{contentId}," }
@@ -198,7 +199,7 @@ class STATICS #シミュレション結果出力クラス
   end
   
   def self.SaveRouterAry( inFilePath )
-    outStr = "#routerId,cacheHitNum,routerReceiveQuery"
+    outStr = "routerId,cacheHitNum,routerReceiveQuery\n"
     @@routerAry.sort{|(k1,v1),(k2,v2)|v1["cacheHitNum"]<=>v2["cacheHitNum"]}.each{|k,v| 
       outStr << "#{k},#{v["cacheHitNum"]},#{v["routerReceiveQuery"]}\n" 
     }
