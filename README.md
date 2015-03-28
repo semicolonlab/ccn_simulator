@@ -50,18 +50,18 @@ setting_fileの解説
 +    `routerType`  
      指定されたルータタイプに基づいた処理が行われる。
      プログラム的にはRouter_#{routerType}モジュールが実行される
-+    `simulationTime`
++    `simulationTime`  
      指定された時間までクエリの生成を行う
-+    `simulationStopTime`
++    `simulationStopTime`  
      未実行イベントが残っていても指定された時間にシミュレーションが強制終了する
      例えばクエリがループ状に転送されている場合でも、結果を取得するために指定する
-+    `queryGenerateTime`
++    `queryGenerateTime`  
      指定された時間間隔でクエリの生成が行われる
-+    `seed`
++    `seed`  
      指定されたシード値を元にクエリの生成などが行われる
-+    `routerNum`
++    `routerNum`  
      指定されたBriteファイルから自動設定         
-+    `linkNum`
++    `linkNum`  
      指定されたBriteファイルから自動設定         
         userNum:            1,                     # ルータに接続するユーザ数         
         serverNum:          500,                   # ルータに接続するサーバ数         
