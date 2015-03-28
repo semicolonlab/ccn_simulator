@@ -77,22 +77,23 @@ setting_fileの解説
 +    `zipf`  
      コンテンツ人気度を決定するzipf則の係数を指定する  
 +    `linkWidth`  
-     帯域幅を指定する（単位は パケット/s)   
-+    `contentPacket`:      
+     帯域幅を指定する（単位は パケット/s)  
++    `contentPacket`:  
      コンテンツのパケット数を指定する                 
-        queryPacket:        1.0,                   # パケット数 1k                    
-        queryLimitHopCount: 100,                   # クエリ最大ホップ数               
-        logFile:            "statics.log",         # ログファイル出力ファイル名       
-        POP_HistoryNum:     2000,                  # BCPOPクエリ履歴数                
-        bcViewerLog:        0,                     # BCViewer用ログ出力フラグ         
-        bandWidth:          false,                # 帯域再現有無フラグ            
++    `queryPacket`
+     クエリのパケット数を指定する
++    `queryLimitHopCount`
+     クエリ最大ホップ数を指定する
+     指定されたホップ数以上になるとエラーとしてカウントされる     
++    `logFile`
+     すべてのイベントを記述したログの出力ファイル名を指定する
++    `POP_HistoryNum`    
+     POP方式で使用するクエリの履歴数を指定する                
++    `bcViewerLog`        0,                     
+     BCViewer用ログ出力フラグ         
++    `bandWidth`
+     帯域を再現するかどうかのフラグ 
 
-+   `param1` :
-    _パラメータ1_ の説明
- 
-+   `param2` :
-    _パラメータ2_ の説明
- 
 関連情報
 --------
 ### リンク、ネストしたリスト
