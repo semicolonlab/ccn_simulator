@@ -85,31 +85,31 @@ setting_fileの解説
      コンテンツのパケット数を指定する                 
 +    `queryPacket`
      クエリのパケット数を指定する
-+    `queryLimitHopCount`
++    `queryLimitHopCount`  
      クエリ最大ホップ数を指定する
      指定されたホップ数以上になるとエラーとしてカウントされる     
-+    `logFile`
++    `logFile`  
      すべてのイベントを記述したログの出力ファイル名を指定する
 +    `POP_HistoryNum`    
      POP方式で使用するクエリの履歴数を指定する                
-+    `bcViewerLog`        0,                     
++    `bcViewerLog`                       
      BCViewer用ログ出力フラグ         
-+    `bandWidth`
++    `bandWidth`  
      帯域を再現するかどうかのフラグ 
 
 出力ファイルについて
 --------
-+    `staticsAry`  
++    `staticsAry.csv`  
      主な統計情報を出力
-+    `routerAry`  
++    `routerAry.csv`  
      ルータごとの統計情報を出力
-+    `serverAry`  
++    `serverAry.csv`  
      サーバごとの統計情報を出力
-+    `linkAry`  
++    `linkAry.csv`  
      リンクごとの統計情報を出力
-+    `contentAry`  
++    `contentAry.csv`  
      コンテンツごとの統計情報を出力
-+    `userAry`  
++    `userAry.csv`  
      ユーザごとの統計情報を出力
 
 ライセンス
