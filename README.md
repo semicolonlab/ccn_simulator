@@ -45,7 +45,7 @@ setting_fileの解説
      イベント実行時間（変更不可）
 +    `message`     
       イベント実行内容（変更不可）
-+    `briteFile`
++    `briteFile`  
       [Brite][Brite]で出力されたトポロジファイル名を指定する
 +    `routerType`  
      指定されたルータタイプに基づいた処理が行われる。
