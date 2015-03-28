@@ -6,10 +6,9 @@ CCNシミュレータ
 使い方
 ------
 開発環境  
-    
+
     ruby 2.1
 
-------
 起動コマンド
 
     ruby Simulator.rb setting_file
