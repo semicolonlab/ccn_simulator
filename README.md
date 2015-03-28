@@ -99,21 +99,19 @@ setting_fileの解説
 
 出力ファイルについて
 --------
-### リンク、ネストしたリスト
-1. [リンク1](http://example.com/ "リンクのタイトル")
-    * ![画像1](http://github.com/unicorn.png "画像のタイトル")
-2. [リンク2][link]
-    - [![画像2][image]](https://github.com/)
- 
-  [link]: http://example.com/ "インデックス型のリンク"
-  [image]: http://github.com/github.png "インデックス型の画像"
- 
-### 引用、ネストした引用
-> これは引用です。
->
-> > スペースを挟んで `>` を重ねると、引用の中で引用ができますが、
-> > GitHubの場合、1行前に空の引用が無いと、正しくマークアップされません。
- 
++    `staticsAry`
+     主な統計情報を出力
++    `routerAry`
+     ルータごとの統計情報を出力
++    `serverAry`
+     サーバごとの統計情報を出力
++    `linkAry`
+     リンクごとの統計情報を出力
++    `contentAry`
+     コンテンツごとの統計情報を出力
++    `userAry`
+     ユーザごとの統計情報を出力
+
 ライセンス
 ----------
 Copyright &copy; 2015 Kotaro Fujii

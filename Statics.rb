@@ -244,13 +244,13 @@ class STATICS #シミュレション結果出力クラス
     }
     cGetFilePath.call( "statics" )
     CalcResultAry()
-    SaveResultAry( cGetFilePath.call( "statics" ) )
-    SaveLinkLoadAry( cGetFilePath.call( "linkLoad" ) )
-    SaveContentAry( cGetFilePath.call( "content" ) )
-    SaveRouterAry( cGetFilePath.call( "routerCacheHit" ) )
-    SaveRouterReceiveQuery( cGetFilePath.call( "routerReceiveQuery" ) )
-    SaveRouterCacheHitContent( cGetFilePath.call( "routerCacheHitContent" ) )
+    SaveResultAry( cGetFilePath.call( "staticsAry" ) )
+    SaveLinkLoadAry( cGetFilePath.call( "linkAry" ) )
+    SaveContentAry( cGetFilePath.call( "contentAry" ) )
+    SaveRouterAry( cGetFilePath.call( "routerAry" ) )
+#    SaveRouterReceiveQuery( cGetFilePath.call( "routerReceiveQuery" ) )
+#    SaveRouterCacheHitContent( cGetFilePath.call( "routerCacheHitContent" ) )
     SaveServerAry( cGetFilePath.call( "serverAry" ) )
-    SaveUserAry( cGetFilePath.call( "user" ) )
+    SaveUserAry( cGetFilePath.call( "userAry" ) )
   end
 end
