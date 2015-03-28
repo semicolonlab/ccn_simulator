@@ -76,9 +76,10 @@ setting_fileの解説
      ルータが持つことができるコンテンツキャッシュ数を指定する
 +    `zipf`
      コンテンツ人気度を決定するzipf則の係数を指定する
-
-        linkWidth:          1.0,                   # 帯域幅 1Gbps = 125 kBps          
-        contentPacket:      10.0,                  # パケット数 100k                  
++    `linkWidth`
+     帯域幅を指定する（単位は パケット/s)   
++    `contentPacket`:      
+     コンテンツのパケット数を指定する                 
         queryPacket:        1.0,                   # パケット数 1k                    
         queryLimitHopCount: 100,                   # クエリ最大ホップ数               
         logFile:            "statics.log",         # ログファイル出力ファイル名       
