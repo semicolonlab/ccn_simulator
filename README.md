@@ -63,11 +63,20 @@ setting_fileの解説
      指定されたBriteファイルから自動設定         
 +    `linkNum`  
      指定されたBriteファイルから自動設定         
-        userNum:            1,                     # ルータに接続するユーザ数         
-        serverNum:          500,                   # ルータに接続するサーバ数         
-        contentNum:         1000,                    # コンテンツ数                   
-        routerCacheSize:    2,                     # ルータキャッシュサイズ           
-        zipf:               0.7,                   # zipf係数                         
++    `userNum`
+     ルータに接続されたユーザ数を指定する  
+     全ユーザ数では無いことに注意
++    `serverNum`
+     全サーバ数を指定する  
+     サーバは偏りを避けてランダムに配置される
++    `contentNum`
+     総コンテンツ数を指定する
+     コンテンツ数が均一になるようにサーバへ配置される
++    `routerCacheSize`
+     ルータが持つことができるコンテンツキャッシュ数を指定する
++    `zipf`
+     コンテンツ人気度を決定するzipf則の係数を指定する
+
         linkWidth:          1.0,                   # 帯域幅 1Gbps = 125 kBps          
         contentPacket:      10.0,                  # パケット数 100k                  
         queryPacket:        1.0,                   # パケット数 1k                    
