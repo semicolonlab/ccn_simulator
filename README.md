@@ -83,7 +83,7 @@ setting_fileの解説
      帯域幅を指定する（単位は パケット/s)  
 +    `contentPacket`:  
      コンテンツのパケット数を指定する                 
-+    `queryPacket`
++    `queryPacket`  
      クエリのパケット数を指定する
 +    `queryLimitHopCount`  
      クエリ最大ホップ数を指定する
