@@ -99,17 +99,17 @@ setting_fileの解説
 
 出力ファイルについて
 --------
-+    `staticsAry`
++    `staticsAry`  
      主な統計情報を出力
-+    `routerAry`
++    `routerAry`  
      ルータごとの統計情報を出力
-+    `serverAry`
++    `serverAry`  
      サーバごとの統計情報を出力
-+    `linkAry`
++    `linkAry`  
      リンクごとの統計情報を出力
-+    `contentAry`
++    `contentAry`  
      コンテンツごとの統計情報を出力
-+    `userAry`
++    `userAry`  
      ユーザごとの統計情報を出力
 
 ライセンス
